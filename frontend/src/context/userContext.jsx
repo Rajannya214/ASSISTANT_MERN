@@ -3,7 +3,7 @@ import axios from "axios"
 export const userDataContext = createContext();
 
 function userContext({children}) {
-    const serverUrl = "http://localhost:8000";
+    const serverUrl = "https://assistant-mern-backend.onrender.com";
     const [userData,setUserData] = useState(null);
     const [frontendImage,SetFrontendImage]= useState(null);
     const [backendImage,setBackendImage]= useState(null);
