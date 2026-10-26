@@ -5,8 +5,8 @@ import bcrypt from "bcryptjs"
 const cookieOptions = () => ({
   httpOnly: true,
   maxAge: 15 * 24 * 60 * 60 * 1000,
-  sameSite: "strict",
-  secure: process.env.NODE_ENV === "production"
+  sameSite: "none",
+  secure: true
 })
 
 const isValidEmail = (e) => typeof e === "string" && /^\S+@\S+\.\S+$/.test(e)
