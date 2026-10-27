@@ -1,11 +1,10 @@
 import axios from "axios";
-const geminiResponse = async (command, assistantName,userName)=>{
-    try{
-      const apiKey = process.env.GEMINI_API_KEY
-      const model = process.env.GEMINI_MODEL 
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
 
-      const prompt = `You are a virtual assistant named ${assistantName} created by ${userName}.
+const geminiResponse = async (command, assistantName, userName) => {
+  try {
+    const apiKey = process.env.GEMINI_API_KEY
+
+    const prompt = `You are a virtual assistant named ${assistantName} created by ${userName}.
       You are not Google.You will now behave like a voice-enabled assistant.
       
       Your task is to understand the user's natural language input and respond with a JSON object like this:
@@ -44,21 +43,39 @@ const geminiResponse = async (command, assistantName,userName)=>{
       now your userInput- ${command}
       `;
 
+    
+      const models = [
+  "gemini-3.5-flash-lite",
+  "gemini-3.6-flash",
+  process.env.GEMINI_MODEL
+].filter(Boolean)
 
-
-      const result = await axios.post(
-  apiUrl,
-  { contents: [{ parts: [{ text: prompt }] }] },
-  {
-    headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
-    timeout: 20000
-  }
-)
-return result.data?.candidates?.[0]?.content?.parts?.[0]?.text ?? null
-    }catch(err){
-     console.log("gemini error:", err.message);
-     return null;
+    const body = { contents: [{ parts: [{ text: prompt }] }] }
+    const config = {
+      headers: { "x-goog-api-key": apiKey, "Content-Type": "application/json" },
+      timeout: 20000
     }
+
+    for (const m of models) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const result = await axios.post(url, body, config)
+          const text = result.data?.candidates?.[0]?.content?.parts?.[0]?.text
+          if (text) return text
+        } catch (err) {
+          const status = err.response?.status
+          console.error(`gemini error (${m}, try ${attempt}):`, status, JSON.stringify(err.response?.data) || err.message)
+          if (![429, 500, 503, 504].includes(status) && err.code !== "ECONNABORTED") break
+          await new Promise(r => setTimeout(r, 1000))
+        }
+      }
+    }
+    return null
+  } catch (err) {
+    console.error("gemini error:", err.message)
+    return null
+  }
 }
 
 export default geminiResponse;
